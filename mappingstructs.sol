@@ -2,9 +2,20 @@ pragma solidity ^0.7.4;
 
 contract mappingsStruct {
     
+    struct Payment {
+        uint amount;
+        uint timestamp;
+    }
+    
+    struct Balance {
+        uint totalBalance;
+        uint numPayments;
+        mapping(uint => Payment) payments;
+    }
+    
     address owner;
     
-    mapping(address => uint) public balanceReceived;
+    mapping(address => Balance) public balanceReceived;
     
     constructor() public {
         owner = msg.sender;
@@ -15,7 +26,11 @@ contract mappingsStruct {
     }
     
     function sendMoney() public payable {
-        balanceReceived[msg.sender] += msg.value;
+        balanceReceived[msg.sender].totalBalance += msg.value;
+        Payment memory payment = Payment(msg.value, block.timestamp);
+        
+        balanceReceived[msg.sender].payments[balanceReceived[msg.sender].numPayments] = payment;
+        balanceReceived[msg.sender].numPayments++;
     }
     
     function withdrawAllMoney(address payable _to) public {
@@ -25,14 +40,14 @@ contract mappingsStruct {
     }
     
     function withdrawBalance(address payable _to) public {
-        uint balanceToSend = balanceReceived[msg.sender];
-        balanceReceived[msg.sender] = 0;
+        uint balanceToSend = balanceReceived[msg.sender].totalBalance;
+        balanceReceived[msg.sender].totalBalance = 0;
         _to.transfer(balanceToSend);
     }
     
     function withdrawMoney(address payable _to, uint _amount) public {
-        require(balanceReceived[msg.sender] >= _amount, "You don't have enough funds");
-        balanceReceived[msg.sender] -= _amount;
+        require(balanceReceived[msg.sender].totalBalance >= _amount, "You don't have enough funds");
+        balanceReceived[msg.sender].totalBalance -= _amount;
         _to.transfer(_amount);
     }
 }
